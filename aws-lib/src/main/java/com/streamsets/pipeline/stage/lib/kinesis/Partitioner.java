@@ -17,29 +17,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.streamsets.pipeline.stage.destination.kinesis;
+package com.streamsets.pipeline.stage.lib.kinesis;
 
-import com.streamsets.pipeline.api.GenerateResourceBundle;
-import com.streamsets.pipeline.api.Label;
+/**
+ * Kinesis doesn't come with any out of the box
+ * partitioning strategy implementations. This is
+ * the interface we use for the ones we provide,
+ * similar to Kafka's.
+ */
+public interface Partitioner {
+  // Use zero padded string representation of a long since that is the maximum partitions we currently support.
+  String PK_FORMAT = "%019d";
 
-@GenerateResourceBundle
-public enum PartitionStrategy implements Label {
-  ROUND_ROBIN("Round Robin"),
-  RANDOM("Random"),
-  EXPRESSION("Expression"),
-  ;
-
-  private final String label;
-
-  PartitionStrategy(String label) {
-    this.label = label;
-  }
-
-  @Override
-  public String getLabel() {
-    return label;
-  }
+  String partition(Object key, long numPartitions);
 }
-
-
-

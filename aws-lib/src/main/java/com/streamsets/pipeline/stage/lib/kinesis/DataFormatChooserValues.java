@@ -17,29 +17,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.streamsets.pipeline.stage.destination.kinesis;
+package com.streamsets.pipeline.stage.lib.kinesis;
 
-import com.streamsets.pipeline.api.GenerateResourceBundle;
-import com.streamsets.pipeline.api.Label;
+import com.streamsets.pipeline.api.base.BaseEnumChooserValues;
+import com.streamsets.pipeline.config.DataFormat;
 
-@GenerateResourceBundle
-public enum PartitionStrategy implements Label {
-  ROUND_ROBIN("Round Robin"),
-  RANDOM("Random"),
-  EXPRESSION("Expression"),
-  ;
-
-  private final String label;
-
-  PartitionStrategy(String label) {
-    this.label = label;
-  }
-
-  @Override
-  public String getLabel() {
-    return label;
+public class DataFormatChooserValues extends BaseEnumChooserValues<DataFormat> {
+  public DataFormatChooserValues() {
+    super(
+        DataFormat.AVRO,
+        DataFormat.BINARY,
+        DataFormat.DELIMITED,
+        DataFormat.JSON,
+        DataFormat.LOG,
+        DataFormat.SDC_JSON,
+        DataFormat.TEXT,
+        DataFormat.XML
+    );
   }
 }
-
-
-

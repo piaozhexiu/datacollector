@@ -56,6 +56,7 @@ import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,7 +78,7 @@ public class DataParserFormatConfig {
     triggeredByValue = {"TEXT", "JSON", "DELIMITED", "XML", "LOG"}
   )
   @ValueChooserModel(CharsetChooserValues.class)
-  public String charset;
+  public String charset = "UTF-8";
 
   @ConfigDef(
     required = true,
@@ -88,7 +89,7 @@ public class DataParserFormatConfig {
     displayPosition = 3020,
     group = "#0"
   )
-  public boolean removeCtrlChars;
+  public boolean removeCtrlChars = false;
 
   @ConfigDef(
     required = true,
@@ -107,7 +108,8 @@ public class DataParserFormatConfig {
     required = true,
     type = ConfigDef.Type.STRING,
     label = "File Name Pattern within Compressed Directory",
-    description = "A glob or regular expression that defines the pattern of the file names within the compressed directory",
+    description = "A glob or regular expression that defines the pattern of the file names within the compressed " +
+        "directory.",
     defaultValue = "*",
     displayPosition = 3040,
     group = "#0",
@@ -158,7 +160,7 @@ public class DataParserFormatConfig {
     min = 1,
     max = Integer.MAX_VALUE
   )
-  public int jsonMaxObjectLen;
+  public int jsonMaxObjectLen = 4096;
 
   @ConfigDef(
     required = true,
@@ -172,7 +174,7 @@ public class DataParserFormatConfig {
     triggeredByValue = "DELIMITED"
   )
   @ValueChooserModel(CsvModeChooserValues.class)
-  public CsvMode csvFileFormat;
+  public CsvMode csvFileFormat = CsvMode.CSV;
 
   @ConfigDef(
     required = true,
@@ -186,7 +188,7 @@ public class DataParserFormatConfig {
     triggeredByValue = "DELIMITED"
   )
   @ValueChooserModel(CsvHeaderChooserValues.class)
-  public CsvHeader csvHeader;
+  public CsvHeader csvHeader = CsvHeader.NO_HEADER;
 
   @ConfigDef(
     required = true,
@@ -201,7 +203,7 @@ public class DataParserFormatConfig {
     min = 1,
     max = Integer.MAX_VALUE
   )
-  public int csvMaxObjectLen;
+  public int csvMaxObjectLen = 1024;
 
   @ConfigDef(
     required = false,
@@ -213,7 +215,7 @@ public class DataParserFormatConfig {
     dependsOn = "csvFileFormat",
     triggeredByValue = "CUSTOM"
   )
-  public char csvCustomDelimiter;
+  public char csvCustomDelimiter = '|';
 
   @ConfigDef(
     required = false,
@@ -225,7 +227,7 @@ public class DataParserFormatConfig {
     dependsOn = "csvFileFormat",
     triggeredByValue = "CUSTOM"
   )
-  public char csvCustomEscape;
+  public char csvCustomEscape = '\\';
 
   @ConfigDef(
     required = false,
@@ -237,7 +239,7 @@ public class DataParserFormatConfig {
     dependsOn = "csvFileFormat",
     triggeredByValue = "CUSTOM"
   )
-  public char csvCustomQuote;
+  public char csvCustomQuote = '\"';
 
   @ConfigDef(
     required = true,
@@ -251,7 +253,7 @@ public class DataParserFormatConfig {
     triggeredByValue = "DELIMITED"
   )
   @ValueChooserModel(CsvRecordTypeChooserValues.class)
-  public CsvRecordType csvRecordType;
+  public CsvRecordType csvRecordType = CsvRecordType.LIST_MAP;
 
   @ConfigDef(
     required = false,
@@ -264,7 +266,7 @@ public class DataParserFormatConfig {
     dependsOn = "dataFormat^",
     triggeredByValue = "XML"
   )
-  public String xmlRecordElement;
+  public String xmlRecordElement = "";
 
   @ConfigDef(
     required = true,
@@ -279,7 +281,7 @@ public class DataParserFormatConfig {
     min = 1,
     max = Integer.MAX_VALUE
   )
-  public int xmlMaxObjectLen;
+  public int xmlMaxObjectLen = 4096;
 
   // LOG Configuration
 
@@ -295,7 +297,7 @@ public class DataParserFormatConfig {
     triggeredByValue = "LOG"
   )
   @ValueChooserModel(LogModeChooserValues.class)
-  public LogMode logMode;
+  public LogMode logMode = LogMode.COMMON_LOG_FORMAT;
 
   @ConfigDef(
     required = true,
@@ -310,7 +312,7 @@ public class DataParserFormatConfig {
     min = 1,
     max = Integer.MAX_VALUE
   )
-  public int logMaxObjectLen;
+  public int logMaxObjectLen = 1024;
 
   @ConfigDef(
     required = true,
@@ -323,7 +325,7 @@ public class DataParserFormatConfig {
     dependsOn = "dataFormat^",
     triggeredByValue = "LOG"
   )
-  public boolean retainOriginalLine;
+  public boolean retainOriginalLine = false;
 
   //APACHE_CUSTOM_LOG_FORMAT
   @ConfigDef(
@@ -337,7 +339,7 @@ public class DataParserFormatConfig {
     dependsOn = "logMode",
     triggeredByValue = "APACHE_CUSTOM_LOG_FORMAT"
   )
-  public String customLogFormat;
+  public String customLogFormat = "%h %l %u %t \"%r\" %>s %b";
 
   //REGEX
 
@@ -352,7 +354,8 @@ public class DataParserFormatConfig {
     dependsOn = "logMode",
     triggeredByValue = "REGEX"
   )
-  public String regex;
+  public String regex =
+      "^(\\S+) (\\S+) (\\S+) \\[([\\w:/]+\\s[+\\-]\\d{4})\\] \"(\\S+) (\\S+) (\\S+)\" (\\d{3}) (\\d+)";
 
   @ConfigDef(
     required = true,
@@ -366,7 +369,7 @@ public class DataParserFormatConfig {
     triggeredByValue = "REGEX"
   )
   @ListBeanModel
-  public List<RegExConfig> fieldPathsToGroupName;
+  public List<RegExConfig> fieldPathsToGroupName = new ArrayList<>();
 
   //GROK
 
@@ -382,7 +385,7 @@ public class DataParserFormatConfig {
     triggeredByValue = "GROK",
     mode = ConfigDef.Mode.PLAIN_TEXT
   )
-  public String grokPatternDefinition;
+  public String grokPatternDefinition = "";
 
   @ConfigDef(
     required = true,
@@ -395,7 +398,7 @@ public class DataParserFormatConfig {
     dependsOn = "logMode",
     triggeredByValue = "GROK"
   )
-  public String grokPattern;
+  public String grokPattern = "%{COMMONAPACHELOG}";
 
   //LOG4J
 
@@ -411,7 +414,7 @@ public class DataParserFormatConfig {
     triggeredByValue = "LOG4J"
   )
   @ValueChooserModel(OnParseErrorChooserValues.class)
-  public OnParseError onParseError;
+  public OnParseError onParseError = OnParseError.ERROR;
 
   @ConfigDef(
     required = true,
@@ -427,7 +430,7 @@ public class DataParserFormatConfig {
     min = 0,
     max = Integer.MAX_VALUE
   )
-  public int maxStackTraceLines;
+  public int maxStackTraceLines = 50;
 
   @ConfigDef(
     required = true,
@@ -440,7 +443,7 @@ public class DataParserFormatConfig {
     dependsOn = "logMode",
     triggeredByValue = "LOG4J"
   )
-  public boolean enableLog4jCustomLogFormat;
+  public boolean enableLog4jCustomLogFormat = false;
 
 
   @ConfigDef(
@@ -454,7 +457,7 @@ public class DataParserFormatConfig {
     dependsOn = "enableLog4jCustomLogFormat",
     triggeredByValue = "true"
   )
-  public String log4jCustomLogFormat;
+  public String log4jCustomLogFormat = "%r [%t] %-5p %c %x - %m%n";
 
   //AVRO
 
@@ -469,7 +472,7 @@ public class DataParserFormatConfig {
     dependsOn = "dataFormat^",
     triggeredByValue = "AVRO"
   )
-  public boolean schemaInMessage;
+  public boolean schemaInMessage = true;
 
   @ConfigDef(
     required = false,
@@ -483,7 +486,7 @@ public class DataParserFormatConfig {
     triggeredByValue = "AVRO",
     mode = ConfigDef.Mode.JSON
   )
-  public String avroSchema;
+  public String avroSchema = "";
 
   @ConfigDef(
     required = true,
@@ -496,7 +499,7 @@ public class DataParserFormatConfig {
     dependsOn = "dataFormat^",
     triggeredByValue = "PROTOBUF"
   )
-  public String protoDescriptorFile;
+  public String protoDescriptorFile = "";
 
   @ConfigDef(
     required = true,
@@ -508,7 +511,7 @@ public class DataParserFormatConfig {
     dependsOn = "dataFormat^",
     triggeredByValue = "PROTOBUF"
   )
-  public String messageType;
+  public String messageType = "";
 
   public boolean init(Stage.Context context, DataFormat dataFormat, String stageGroup, List<Stage.ConfigIssue> issues) {
     return init(context, dataFormat, stageGroup, DataFormatConstants.MAX_OVERRUN_LIMIT, issues);

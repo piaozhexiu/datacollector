@@ -24,23 +24,32 @@ import com.amazonaws.services.kinesis.clientlibrary.interfaces.v2.IRecordProcess
 import com.amazonaws.services.kinesis.clientlibrary.types.InitializationInput;
 import com.amazonaws.services.kinesis.clientlibrary.types.ProcessRecordsInput;
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownInput;
+import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownReason;
 import com.amazonaws.services.kinesis.model.Record;
-import org.apache.commons.lang3.tuple.Pair;
+import com.streamsets.pipeline.stage.lib.kinesis.RecordsAndCheckpointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.TransferQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class StreamSetsRecordProcessor implements IRecordProcessor {
   private static final Logger LOG = LoggerFactory.getLogger(StreamSetsRecordProcessor.class);
 
+  private final TransferQueue<RecordsAndCheckpointer> recordQueue;
+
+  private final Object checkpointMonitor;
+  private final AtomicBoolean checkpointComplete;
   private String shardId;
-  private final TransferQueue<Pair<List<Record>, IRecordProcessorCheckpointer>> recordQueue;
 
-  private String lastRecordOffset;
-
-  public StreamSetsRecordProcessor(TransferQueue<Pair<List<Record>, IRecordProcessorCheckpointer>> recordQueue) {
+  public StreamSetsRecordProcessor(
+      Object checkpointMonitor,
+      AtomicBoolean checkpointComplete,
+      TransferQueue<RecordsAndCheckpointer> recordQueue
+  ) {
+    this.checkpointMonitor = checkpointMonitor;
+    this.checkpointComplete = checkpointComplete;
     this.recordQueue = recordQueue;
   }
 
@@ -50,7 +59,8 @@ public class StreamSetsRecordProcessor implements IRecordProcessor {
   @Override
   public void initialize(InitializationInput initializationInput) {
     final String shardId = initializationInput.getShardId();
-    LOG.debug("Initializing record processor for shard: " + shardId);
+    LOG.debug("Initializing record processor at: {}", initializationInput.getExtendedSequenceNumber().toString());
+    LOG.debug("Initializing record processor for shard: {}", shardId);
     this.shardId = shardId;
   }
 
@@ -62,9 +72,16 @@ public class StreamSetsRecordProcessor implements IRecordProcessor {
     List<Record> records = processRecordsInput.getRecords();
     IRecordProcessorCheckpointer checkpointer = processRecordsInput.getCheckpointer();
     try {
-      recordQueue.transfer(Pair.of(records, checkpointer));
-      lastRecordOffset = records.get(records.size() - 1).getSequenceNumber();
+      recordQueue.transfer(new RecordsAndCheckpointer(records, checkpointer));
+      checkpointComplete.set(false);
       LOG.debug("Placed {} records into the queue.", records.size());
+
+      synchronized (checkpointMonitor) {
+        // Wait for checkpointing of the batch to complete.
+        while (!checkpointComplete.get()) {
+          checkpointMonitor.wait();
+        }
+      }
     } catch (InterruptedException e) {
       LOG.error("Failed to place batch in queue for shardId {}", shardId);
     }
@@ -76,6 +93,18 @@ public class StreamSetsRecordProcessor implements IRecordProcessor {
   @Override
   public void shutdown(ShutdownInput shutdownInput) {
     LOG.info("Shutting down record processor for shard: {}", shardId);
-    LOG.info("Last record processed: {}", lastRecordOffset);
+    if (shutdownInput.getShutdownReason() == ShutdownReason.TERMINATE) {
+      // We send an empty batch with the checkpointer to signal end of a shard.
+      try {
+        recordQueue.transfer(new RecordsAndCheckpointer(shutdownInput.getCheckpointer()));
+        checkpointComplete.set(false);
+        while (!checkpointComplete.get()) {
+          checkpointMonitor.wait();
+        }
+        LOG.debug("Shutdown checkpoint completed.");
+      } catch (InterruptedException e) {
+        LOG.error("Interrupted while waiting for shutdown checkpoint.");
+      }
+    }
   }
 }

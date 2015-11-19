@@ -17,29 +17,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.streamsets.pipeline.stage.destination.kinesis;
+package com.streamsets.pipeline.stage.lib.kinesis;
 
-import com.streamsets.pipeline.api.GenerateResourceBundle;
-import com.streamsets.pipeline.api.Label;
+import java.util.HashMap;
 
-@GenerateResourceBundle
-public enum PartitionStrategy implements Label {
-  ROUND_ROBIN("Round Robin"),
-  RANDOM("Random"),
-  EXPRESSION("Expression"),
-  ;
+public class ShardMap {
+  private final HashMap<String, String> map = new HashMap<>();
 
-  private final String label;
+  /**
+   * Adds a shardId for a particular partitionKey to the map and returns
+   * whether or not we should re-count the shards in the stream.
+   * @param partitionKey partitionKey for a UserRecord
+   * @param shardId The shardId returned by a UserRecordResult
+   * @return whether or not the caller should invalidate their shard count.
+   */
+  public boolean put(String partitionKey, String shardId) {
+    boolean shouldInvalidate = false;
+    String predictedShard = map.get(partitionKey);
+    if (predictedShard != null && !shardId.equals(predictedShard)) {
+      shouldInvalidate = true;
+      map.clear();
+    }
 
-  PartitionStrategy(String label) {
-    this.label = label;
-  }
-
-  @Override
-  public String getLabel() {
-    return label;
+    map.put(partitionKey, shardId);
+    return shouldInvalidate;
   }
 }
-
-
-

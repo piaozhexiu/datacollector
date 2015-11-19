@@ -17,29 +17,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.streamsets.pipeline.stage.destination.kinesis;
+package com.streamsets.pipeline.stage.lib.kinesis;
 
-import com.streamsets.pipeline.api.GenerateResourceBundle;
-import com.streamsets.pipeline.api.Label;
+import org.junit.Test;
+import static org.junit.Assert.*;
 
-@GenerateResourceBundle
-public enum PartitionStrategy implements Label {
-  ROUND_ROBIN("Round Robin"),
-  RANDOM("Random"),
-  EXPRESSION("Expression"),
-  ;
+public class TestRandomPartitioner {
 
-  private final String label;
+  @Test
+  public void testRandomPartitioner() {
+    Partitioner partitioner = new RandomPartitioner();
 
-  PartitionStrategy(String label) {
-    this.label = label;
-  }
+    long numShards = 3;
+    assertEquals(19, partitioner.partition(null, numShards).length());
 
-  @Override
-  public String getLabel() {
-    return label;
+    numShards = Long.MAX_VALUE;
+    assertEquals(19, partitioner.partition(null, numShards).length());
   }
 }
-
-
-

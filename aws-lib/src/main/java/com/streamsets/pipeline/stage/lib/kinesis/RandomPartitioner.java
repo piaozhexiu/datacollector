@@ -17,29 +17,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.streamsets.pipeline.stage.destination.kinesis;
+package com.streamsets.pipeline.stage.lib.kinesis;
 
-import com.streamsets.pipeline.api.GenerateResourceBundle;
-import com.streamsets.pipeline.api.Label;
+import org.apache.commons.math3.random.RandomDataGenerator;
 
-@GenerateResourceBundle
-public enum PartitionStrategy implements Label {
-  ROUND_ROBIN("Round Robin"),
-  RANDOM("Random"),
-  EXPRESSION("Expression"),
-  ;
-
-  private final String label;
-
-  PartitionStrategy(String label) {
-    this.label = label;
-  }
+public class RandomPartitioner implements Partitioner {
+  RandomDataGenerator random = new RandomDataGenerator();
 
   @Override
-  public String getLabel() {
-    return label;
+  public String partition(Object key, long numPartitions) {
+    return String.format(PK_FORMAT, random.nextLong(0, numPartitions));
   }
 }
-
-
-

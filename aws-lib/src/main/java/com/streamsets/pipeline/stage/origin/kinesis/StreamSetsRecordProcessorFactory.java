@@ -19,27 +19,31 @@
  */
 package com.streamsets.pipeline.stage.origin.kinesis;
 
-import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorCheckpointer;
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.v2.IRecordProcessor;
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.v2.IRecordProcessorFactory;
-import com.amazonaws.services.kinesis.model.Record;
-import org.apache.commons.lang3.tuple.Pair;
+import com.streamsets.pipeline.stage.lib.kinesis.RecordsAndCheckpointer;
 
-import java.util.List;
 import java.util.concurrent.TransferQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class StreamSetsRecordProcessorFactory implements IRecordProcessorFactory {
-  final TransferQueue<Pair<List<Record>, IRecordProcessorCheckpointer>> batchQueue;
+  final TransferQueue<RecordsAndCheckpointer> batchQueue;
+  final Object checkpointMonitor;
+  final AtomicBoolean checkpointComplete;
 
   public StreamSetsRecordProcessorFactory(
-      TransferQueue<Pair<List<Record>, IRecordProcessorCheckpointer>> batchQueue
+      Object checkpointMonitor,
+      AtomicBoolean checkpointComplete,
+      TransferQueue<RecordsAndCheckpointer> batchQueue
   ) {
+    this.checkpointMonitor = checkpointMonitor;
+    this.checkpointComplete = checkpointComplete;
     this.batchQueue = batchQueue;
   }
 
   @Override
   public IRecordProcessor createProcessor() {
-    return new StreamSetsRecordProcessor(batchQueue);
+    return new StreamSetsRecordProcessor(checkpointMonitor, checkpointComplete, batchQueue);
   }
 
 }

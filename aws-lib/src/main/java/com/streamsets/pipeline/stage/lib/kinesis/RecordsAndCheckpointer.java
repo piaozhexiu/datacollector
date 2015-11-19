@@ -19,33 +19,34 @@
  */
 package com.streamsets.pipeline.stage.lib.kinesis;
 
-import com.streamsets.pipeline.api.ErrorCode;
-import com.streamsets.pipeline.api.GenerateResourceBundle;
+import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorCheckpointer;
+import com.amazonaws.services.kinesis.model.Record;
 
-@GenerateResourceBundle
-public enum Errors implements ErrorCode {
+import java.util.Collections;
+import java.util.List;
 
-  KINESIS_00("Failed to put record: {}"),
-  KINESIS_01("Specified stream name is not available. Ensure you've specified the correct AWS Region. Cause: {}"),
-  KINESIS_02("Unsupported partition strategy: '{}'"),
-  KINESIS_03("Failed to parse incoming Kinesis record w/ sequence number: {}"),
-  KINESIS_04("Failed to extract subSequenceNumber from offset: '{}'"),
-  KINESIS_05("Failed to serialize record: '{}' - {}"),
-  KINESIS_06("Error evaluating the partition expression '{}' for record '{}': {}"),
-  ;
-  private final String msg;
+/**
+ * Wrapper for a batch of records and their checkpointer instance.
+ */
+public class RecordsAndCheckpointer {
+  private final List<Record> records;
+  private final IRecordProcessorCheckpointer checkpointer;
 
-  Errors(String msg) {
-    this.msg = msg;
+  public RecordsAndCheckpointer(List<Record> records, IRecordProcessorCheckpointer checkpointer) {
+    this.records = records;
+    this.checkpointer = checkpointer;
   }
 
-  @Override
-  public String getCode() {
-    return name();
+  public RecordsAndCheckpointer(IRecordProcessorCheckpointer checkpointer) {
+    this.records = Collections.emptyList();
+    this.checkpointer = checkpointer;
   }
 
-  @Override
-  public String getMessage() {
-    return msg;
+  public List<Record> getRecords() {
+    return records;
+  }
+
+  public IRecordProcessorCheckpointer getCheckpointer() {
+    return checkpointer;
   }
 }
