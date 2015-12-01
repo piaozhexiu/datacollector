@@ -25,12 +25,11 @@ import com.streamsets.pipeline.api.Stage;
 import com.streamsets.pipeline.api.impl.Utils;
 import com.streamsets.pipeline.config.CsvHeader;
 import com.streamsets.pipeline.config.CsvRecordType;
+import com.streamsets.pipeline.lib.csv.CsvFormat;
 import com.streamsets.pipeline.lib.csv.OverrunCsvParser;
 import com.streamsets.pipeline.lib.io.OverrunReader;
 import com.streamsets.pipeline.lib.parser.AbstractDataParser;
-import com.streamsets.pipeline.lib.parser.DataParser;
 import com.streamsets.pipeline.lib.parser.DataParserException;
-import org.apache.commons.csv.CSVFormat;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -47,21 +46,27 @@ public class DelimitedCharDataParser extends AbstractDataParser {
   private boolean eof;
   private CsvRecordType recordType;
 
-  public DelimitedCharDataParser(Stage.Context context, String readerId, OverrunReader reader, long readerOffset,
-                                 CSVFormat format, CsvHeader header, int maxObjectLen, CsvRecordType recordType)
-    throws IOException {
+  public DelimitedCharDataParser(
+      Stage.Context context,
+      String readerId,
+      OverrunReader reader,
+      long readerOffset,
+      CsvFormat format,
+      CsvHeader header,
+      int maxObjectLen,
+      CsvRecordType recordType
+  ) throws IOException {
     this.context = context;
     this.readerId = readerId;
     this.recordType = recordType;
+
     switch (header) {
       case WITH_HEADER:
-        format = format.withHeader((String[])null).withSkipHeaderRecord(true);
-        break;
       case IGNORE_HEADER:
-        format = format.withHeader((String[])null).withSkipHeaderRecord(true);
+        format.setCsvSchema(format.getCsvSchema().withSkipFirstDataRow(true));
         break;
       case NO_HEADER:
-        format = format.withHeader((String[])null).withSkipHeaderRecord(false);
+        format.setCsvSchema(format.getCsvSchema().withSkipFirstDataRow(false));
         break;
       default:
         throw new RuntimeException(Utils.format("Unknown header error: {}", header));

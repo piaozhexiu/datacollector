@@ -58,6 +58,8 @@
     <guava.version>18.0</guava.version>
     <dagger.version>1.2.2</dagger.version>
     <jackson.version>2.4.3</jackson.version>
+    <!-- Older versions of jackson-csv have a bug in escape char handling -->
+    <jackson-csv.version>2.6.0</jackson-csv.version>
     <jersey.version>2.13</jersey.version>
     <hk2-api.version>2.3.0-b10</hk2-api.version>
     <jaxrpc.version>2.0.1</jaxrpc.version>
@@ -70,7 +72,6 @@
     <jps-api.version>2.0</jps-api.version>
     <commons-el.version>1.0</commons-el.version>
     <javax.inject.version>1</javax.inject.version>
-    <commons-csv.version>1.1</commons-csv.version>
     <javax.mail.version>1.4.7</javax.mail.version>
     <icegreen.version>1.4.0</icegreen.version>
     <kryo.version>3.0.1</kryo.version>
@@ -405,6 +406,11 @@
         <version>${jackson.version}</version>
       </dependency>
       <dependency>
+        <groupId>com.fasterxml.jackson.dataformat</groupId>
+        <artifactId>jackson-dataformat-csv</artifactId>
+        <version>${jackson-csv.version}</version>
+      </dependency>
+      <dependency>
         <groupId>log4j</groupId>
         <artifactId>log4j</artifactId>
         <version>${log4j.version}</version>
@@ -504,11 +510,6 @@
         <groupId>commons-el</groupId>
         <artifactId>commons-el</artifactId>
         <version>${commons-el.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.commons</groupId>
-        <artifactId>commons-csv</artifactId>
-        <version>${commons-csv.version}</version>
       </dependency>
       <dependency>
         <groupId>javax.mail</groupId>

@@ -22,7 +22,6 @@ package com.streamsets.pipeline.lib.csv;
 import com.google.common.base.Strings;
 import com.streamsets.pipeline.lib.io.OverrunException;
 import com.streamsets.pipeline.lib.io.OverrunReader;
-import org.apache.commons.csv.CSVFormat;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -45,7 +44,7 @@ public class TestOverrunCsvParser {
   private void testLimit(int limit, int lineLength) throws Exception {
     System.setProperty(OverrunReader.READ_LIMIT_SYS_PROP, "" + limit);
     String csv = "a," + Strings.repeat("b", lineLength) + ",c";
-    OverrunCsvParser parser = new OverrunCsvParser(new StringReader(csv), CSVFormat.DEFAULT, -1);
+    OverrunCsvParser parser = new OverrunCsvParser(new StringReader(csv), new CsvFormat(), -1);
     Assert.assertNotNull(parser.read());
   }
 

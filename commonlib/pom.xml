@@ -32,9 +32,10 @@
   <packaging>jar</packaging>
 
   <properties>
-    <commons-csv.version>1.1</commons-csv.version>
     <commons-codec.version>1.9</commons-codec.version>
     <jackson.version>2.4.3</jackson.version>
+    <!-- Older versions of jackson-csv have a bug in escape char handling -->
+    <jackson-csv.version>2.6.0</jackson-csv.version>
     <commons-io.version>2.4</commons-io.version>
     <avro.version>1.7.7</avro.version>
     <commons-compress.version>1.10</commons-compress.version>
@@ -102,12 +103,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-csv</artifactId>
-      <version>${commons-csv.version}</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
       <version>${commons-codec.version}</version>
@@ -139,6 +134,12 @@
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-avro</artifactId>
       <version>${jackson.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-csv</artifactId>
+      <version>${jackson-csv.version}</version>
     </dependency>
 
     <dependency>

@@ -19,35 +19,55 @@
  */
 package com.streamsets.pipeline.config;
 
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.streamsets.pipeline.api.GenerateResourceBundle;
 import com.streamsets.pipeline.api.Label;
-import org.apache.commons.csv.CSVFormat;
+import com.streamsets.pipeline.api.impl.Utils;
+import com.streamsets.pipeline.lib.csv.CsvFormat;
 
 @GenerateResourceBundle
 public enum CsvMode implements Label {
-  CSV("Default CSV (ignores empty lines)", CSVFormat.DEFAULT),
-  RFC4180("RFC4180 CSV", CSVFormat.RFC4180),
-  EXCEL("MS Excel CSV", CSVFormat.EXCEL),
-  MYSQL("MySQL CSV", CSVFormat.MYSQL),
-  TDF("Tab Separated Values", CSVFormat.TDF),
-  CUSTOM("Custom", null)
+  CSV("Default CSV (ignores empty lines)"),
+  RFC4180("RFC4180 CSV"),
+  EXCEL("MS Excel CSV"),
+  MYSQL("MySQL CSV"),
+  TDF("Tab Separated Values"),
+  CUSTOM("Custom")
   ;
 
   private final String label;
-  private final CSVFormat format;
 
-  CsvMode(String label, CSVFormat format) {
+  CsvMode(String label) {
     this.label = label;
-    this.format = format;
+  }
+
+  // Please refer to https://commons.apache.org/proper/commons-csv/apidocs/org/apache/commons/csv/CSVFormat.html
+  // regarding the following CSV formats.
+  public static CsvFormat getCsvFormat(CsvMode csvMode) {
+    CsvFormat csvFormat = new CsvFormat();
+    if (csvMode == CsvMode.CSV) {
+      // Default CsvFormat
+    } else if (csvMode == CsvMode.RFC4180) {
+      csvFormat.setIgnoreEmptyLines(false);
+      csvFormat.setCsvSchema(CsvSchema.emptySchema().withLineSeparator("\r\n"));
+    } else if (csvMode == CsvMode.EXCEL) {
+      csvFormat.setIgnoreEmptyLines(false);
+      csvFormat.setAllowMissingColumnNames(true);
+      csvFormat.setCsvSchema(CsvSchema.emptySchema().withLineSeparator("\r\n"));
+    } else if (csvMode == CsvMode.MYSQL) {
+      csvFormat.setIgnoreEmptyLines(false);
+      csvFormat.setCsvSchema(CsvSchema.emptySchema().withColumnSeparator('\t').withEscapeChar('\\').withoutQuoteChar());
+    } else if (csvMode == CsvMode.TDF) {
+      csvFormat.setIgnoreSurroundingSpaces(true);
+      csvFormat.setCsvSchema(CsvSchema.emptySchema().withColumnSeparator('\t').withLineSeparator("\r\n"));
+    } else {
+      throw new IllegalArgumentException(Utils.format("Unknown CsvMode: {}", csvMode));
+    }
+    return csvFormat;
   }
 
   @Override
   public String getLabel() {
     return label;
   }
-
-  public CSVFormat getFormat() {
-    return format;
-  }
-
 }

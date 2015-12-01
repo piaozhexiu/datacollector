@@ -19,12 +19,15 @@
  */
 package com.streamsets.pipeline.lib;
 
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.streamsets.pipeline.api.Field;
 import com.streamsets.pipeline.api.OnRecordError;
 import com.streamsets.pipeline.api.Record;
 import com.streamsets.pipeline.api.ext.ContextExtensions;
 import com.streamsets.pipeline.api.ext.RecordWriter;
 import com.streamsets.pipeline.api.impl.Utils;
+import com.streamsets.pipeline.lib.csv.CsvFormat;
 import com.streamsets.pipeline.lib.json.StreamingJsonParser;
 import com.streamsets.pipeline.sdk.ContextInfoCreator;
 import com.streamsets.pipeline.sdk.RecordCreator;
@@ -44,8 +47,6 @@ import kafka.utils.TestZKUtils;
 import kafka.utils.ZKStringSerializer$;
 import kafka.zk.EmbeddedZookeeper;
 import org.I0Itec.zkclient.ZkClient;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -362,8 +363,12 @@ public class KafkaTestUtil {
     return messages;
   }
 
-  public static List<KeyedMessage<String, String>> produceCsvMessages(String topic, String partition,
-                                                                      CSVFormat csvFormat, File csvFile) throws IOException {
+  public static List<KeyedMessage<String, String>> produceCsvMessages(
+      String topic,
+      String partition,
+      CsvFormat csvFormat,
+      File csvFile
+  ) throws IOException {
     List<KeyedMessage<String, String>> messages = new ArrayList<>();
     String line;
     BufferedReader bufferedReader = new BufferedReader(new FileReader(KafkaTestUtil.class.getClassLoader()
@@ -371,10 +376,10 @@ public class KafkaTestUtil {
     while ((line = bufferedReader.readLine()) != null) {
       String[] strings = line.split(",");
       StringWriter stringWriter = new StringWriter();
-      CSVPrinter csvPrinter = new CSVPrinter(stringWriter, csvFormat);
-      csvPrinter.printRecord(strings);
-      csvPrinter.flush();
-      csvPrinter.close();
+      ObjectWriter csvEncoder = new CsvMapper().writer().withSchema(csvFormat.getCsvSchema());
+      stringWriter.write(csvEncoder.writeValueAsString(strings));
+      stringWriter.flush();
+      stringWriter.close();
       messages.add(new KeyedMessage<>(topic, partition, stringWriter.toString()));
     }
     return messages;

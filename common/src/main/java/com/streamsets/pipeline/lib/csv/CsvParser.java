@@ -19,14 +19,17 @@
  */
 package com.streamsets.pipeline.lib.csv;
 
+import com.fasterxml.jackson.dataformat.csv.CsvFactory;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.fasterxml.jackson.dataformat.csv.CsvParser.Feature;
 import com.streamsets.pipeline.api.impl.Utils;
 import com.streamsets.pipeline.lib.io.CountingReader;
 import com.streamsets.pipeline.lib.io.ObjectLengthException;
 import com.streamsets.pipeline.lib.util.ExceptionUtils;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -34,52 +37,66 @@ import java.io.Reader;
 import java.util.Iterator;
 
 public class CsvParser implements Closeable, AutoCloseable {
-  private long currentPos;
-  private final CSVParser parser;
+  private static final Logger LOG = LoggerFactory.getLogger(CsvParser.class);
+
+  private final com.fasterxml.jackson.dataformat.csv.CsvParser parser;
+  private final CsvFormat csvFormat;
   private final CountingReader reader;
   private final int maxObjectLen;
-  private Iterator<CSVRecord> iterator;
-  private CSVRecord nextRecord;
   private final String[] headers;
+  private Iterator<String[]> iterator;
+  private long currentPos;
   private boolean closed;
 
-  public CsvParser(Reader reader, CSVFormat format, int maxObjectLen) throws IOException {
+  public CsvParser(Reader reader, CsvFormat format, int maxObjectLen) throws IOException {
     this(new CountingReader(reader), format, maxObjectLen, 0);
   }
 
-  @SuppressWarnings("unchecked")
-  public CsvParser(CountingReader reader, CSVFormat format, int maxObjectLen, long initialPosition) throws IOException {
+  public CsvParser(CountingReader reader, CsvFormat format, int maxObjectLen, long initialPosition) throws IOException {
     Utils.checkNotNull(reader, "reader");
     Utils.checkNotNull(reader.getPos() == 0,
-                       "reader must be in position zero, the CsvParser will fast-forward to the initialPosition");
+        "reader must be in position zero, the CsvParser will fast-forward to the initialPosition");
     Utils.checkNotNull(format, "format");
     Utils.checkArgument(initialPosition >= 0, "initialPosition must be greater or equal than zero");
     this.reader = reader;
-    currentPos = initialPosition;
+    this.currentPos = initialPosition;
     this.maxObjectLen = maxObjectLen;
+    this.csvFormat = format;
+
+    // The header is explicitly read as 1st row, so withSkipFirstDataRow(false).withoutHeader()
+    // must be called if WITH_HEADER or IGNORE_HEADER is chosen.
+    CsvSchema csvSchema = csvFormat.getCsvSchema();
     if (initialPosition == 0) {
-      if (format.getSkipHeaderRecord()) {
-        format = format.withSkipHeaderRecord(false);
-        parser = new CSVParser(reader, format, 0, 0);
+      if (csvSchema.skipsFirstDataRow()) {
+        csvSchema = csvSchema.withSkipFirstDataRow(false).withoutHeader();
+        parser = new CsvFactory().createParser(reader);
+        parser.setCodec(new CsvMapper());
+        parser.setSchema(csvSchema);
         headers = read();
       } else {
-        parser = new CSVParser(reader, format, 0, 0);
+        parser = new CsvFactory().createParser(reader);
+        parser.setCodec(new CsvMapper());
+        parser.setSchema(csvSchema);
         headers = null;
       }
     } else {
-      if (format.getSkipHeaderRecord()) {
-        format = format.withSkipHeaderRecord(false);
-        parser = new CSVParser(reader, format, 0, 0);
+      if (csvSchema.skipsFirstDataRow()) {
+        csvSchema = csvSchema.withSkipFirstDataRow(false).withoutHeader();
+        parser = new CsvFactory().createParser(reader);
+        parser.setCodec(new CsvMapper());
+        parser.setSchema(csvSchema);
         headers = read();
         while (getReaderPosition() < initialPosition && read() != null) {
         }
         if (getReaderPosition() != initialPosition) {
           throw new IOException(Utils.format("Could not position reader at position '{}', got '{}' instead",
-                                             initialPosition, getReaderPosition()));
+              initialPosition, getReaderPosition()));
         }
       } else {
         IOUtils.skipFully(reader, initialPosition);
-        parser = new CSVParser(reader, format, initialPosition, 0);
+        parser = new CsvFactory().createParser(reader);
+        parser.setCodec(new CsvMapper());
+        parser.setSchema(csvSchema);
         headers = null;
       }
     }
@@ -87,10 +104,6 @@ public class CsvParser implements Closeable, AutoCloseable {
 
   protected Reader getReader() {
     return reader;
-  }
-
-  protected CSVRecord nextRecord() throws IOException {
-    return (iterator.hasNext()) ? iterator.next() : null;
   }
 
   public String[] getHeaders() throws IOException {
@@ -106,32 +119,38 @@ public class CsvParser implements Closeable, AutoCloseable {
       throw new IOException("Parser has been closed");
     }
     if (iterator == null) {
-      iterator = parser.iterator();
-      nextRecord = nextRecord();
+      iterator = parser.readValuesAs(String[].class);
     }
-    CSVRecord record = nextRecord;
-    if (nextRecord != null) {
-      nextRecord = nextRecord();
-    }
-    long prevPos = currentPos;
-    currentPos = (nextRecord != null) ? nextRecord.getCharacterPosition() : reader.getPos();
-    if (maxObjectLen > -1) {
-      if (currentPos - prevPos > maxObjectLen) {
-        ExceptionUtils.throwUndeclared(new ObjectLengthException(Utils.format(
-            "CSV Object at offset '{}' exceeds max length '{}'", prevPos, maxObjectLen), prevPos));
+    while (iterator.hasNext()) {
+      String[] record = iterator.next();
+      long prevPos = currentPos;
+      currentPos = parser.nextToken() != null
+          ? parser.getCurrentLocation().getCharOffset() + 1
+          : reader.getPos();
+      if (maxObjectLen > -1) {
+        if (currentPos - prevPos > maxObjectLen) {
+          ExceptionUtils.throwUndeclared(new ObjectLengthException(
+              Utils.format("CSV Object at offset '{}' exceeds max length '{}'", prevPos, maxObjectLen),
+              prevPos));
+        }
       }
-    }
-    return toArray(record);
-  }
-
-  private String[] toArray(CSVRecord record) {
-    String[] array = (record == null) ? null : new String[record.size()];
-    if (array != null) {
-      for (int i = 0; i < record.size(); i++) {
-        array[i] = record.get(i);
+      if (csvFormat.ignoreEmptyLines()) {
+        LOG.debug("ignoreEmptyLines is enabled");
+        if (record.length == 1 && record[0].isEmpty()) {
+          continue;
+        }
       }
+      // TODO: Trimming spaces will be supported in Jackson CSV 2.7.
+      // As of writing, 2.7 is not released yet, so we do it by ourselves.
+      if (csvFormat.ignoreSurroundingSpaces()) {
+        LOG.debug("ignoreSurroundingSpaces is enabled");
+        for (int i = 0; i < record.length; i++) {
+          record[i] = record[i].trim();
+        }
+      }
+      return record;
     }
-    return array;
+    return null;
   }
 
   @Override

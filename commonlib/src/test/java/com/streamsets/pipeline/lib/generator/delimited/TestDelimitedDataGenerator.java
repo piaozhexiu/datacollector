@@ -25,6 +25,7 @@ import com.streamsets.pipeline.api.Record;
 import com.streamsets.pipeline.api.Stage;
 import com.streamsets.pipeline.config.CsvHeader;
 import com.streamsets.pipeline.config.CsvMode;
+import com.streamsets.pipeline.lib.csv.CsvFormat;
 import com.streamsets.pipeline.lib.data.DataFactory;
 import com.streamsets.pipeline.lib.generator.DataGenerator;
 import com.streamsets.pipeline.lib.generator.DataGeneratorFactory;
@@ -33,7 +34,6 @@ import com.streamsets.pipeline.lib.generator.DataGeneratorFormat;
 import com.streamsets.pipeline.lib.util.DelimitedDataConstants;
 import com.streamsets.pipeline.sdk.ContextInfoCreator;
 import com.streamsets.pipeline.sdk.RecordCreator;
-import org.apache.commons.csv.CSVFormat;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -64,7 +64,7 @@ public class TestDelimitedDataGenerator {
     DelimitedDataGeneratorFactory factory = (DelimitedDataGeneratorFactory)dataFactory;
 
     DelimitedCharDataGenerator generator = (DelimitedCharDataGenerator) factory.getGenerator(new ByteArrayOutputStream());
-    Assert.assertEquals(CSVFormat.DEFAULT, generator.getFormat());
+    Assert.assertEquals(new CsvFormat(), generator.getFormat());
     Assert.assertEquals(CsvHeader.IGNORE_HEADER, generator.getHeader());
     Assert.assertEquals("header", generator.getHeaderKey());
     Assert.assertEquals("value", generator.getValueKey());
@@ -92,7 +92,14 @@ public class TestDelimitedDataGenerator {
   @Test
   public void testGeneratorNoHeader() throws Exception {
     StringWriter writer = new StringWriter();
-    DataGenerator gen = new DelimitedCharDataGenerator(writer, CsvMode.CSV.getFormat(), CsvHeader.NO_HEADER, "h", "d", false);
+    DataGenerator gen = new DelimitedCharDataGenerator(
+        writer,
+        new CsvFormat(),
+        CsvHeader.NO_HEADER,
+        "h",
+        "d",
+        false
+    );
     Record record = RecordCreator.create();
     List<Field> list = new ArrayList<>();
     Map<String,Field> map = new HashMap<>();
@@ -111,7 +118,14 @@ public class TestDelimitedDataGenerator {
   @Test
   public void testGeneratorReplaceNewLines() throws Exception {
     StringWriter writer = new StringWriter();
-    DataGenerator gen = new DelimitedCharDataGenerator(writer, CsvMode.CSV.getFormat(), CsvHeader.NO_HEADER, "h", "d", true);
+    DataGenerator gen = new DelimitedCharDataGenerator(
+        writer,
+        new CsvFormat(),
+        CsvHeader.NO_HEADER,
+        "h",
+        "d",
+        true
+    );
     Record record = RecordCreator.create();
     List<Field> list = new ArrayList<>();
     Map<String,Field> map = new HashMap<>();
@@ -133,7 +147,14 @@ public class TestDelimitedDataGenerator {
   @Test
   public void testGeneratorIgnoreHeader() throws Exception {
     StringWriter writer = new StringWriter();
-    DataGenerator gen = new DelimitedCharDataGenerator(writer, CsvMode.CSV.getFormat(), CsvHeader.IGNORE_HEADER, "h", "d", false);
+    DataGenerator gen = new DelimitedCharDataGenerator(
+        writer,
+        new CsvFormat(),
+        CsvHeader.IGNORE_HEADER,
+        "h",
+        "d",
+        false
+    );
     Record record = RecordCreator.create();
     List<Field> list = new ArrayList<>();
     Map<String,Field> map = new HashMap<>();
@@ -152,7 +173,14 @@ public class TestDelimitedDataGenerator {
   @Test
   public void testGeneratorWithHeader() throws Exception {
     StringWriter writer = new StringWriter();
-    DataGenerator gen = new DelimitedCharDataGenerator(writer, CsvMode.CSV.getFormat(), CsvHeader.WITH_HEADER, "h", "d", false);
+    DataGenerator gen = new DelimitedCharDataGenerator(
+        writer,
+        new CsvFormat(),
+        CsvHeader.WITH_HEADER,
+        "h",
+        "d",
+        false
+    );
     Record record = RecordCreator.create();
     List<Field> list = new ArrayList<>();
     Map<String,Field> map = new HashMap<>();
@@ -175,8 +203,14 @@ public class TestDelimitedDataGenerator {
   @Test
   public void testGeneratorListMapWithHeader() throws Exception {
     StringWriter writer = new StringWriter();
-    DataGenerator gen = new DelimitedCharDataGenerator(writer, CsvMode.CSV.getFormat(), CsvHeader.WITH_HEADER, "h", "d", false);
-
+    DataGenerator gen = new DelimitedCharDataGenerator(
+        writer,
+        new CsvFormat(),
+        CsvHeader.WITH_HEADER,
+        "h",
+        "d",
+        false
+    );
     LinkedHashMap<String, Field> linkedHashMap = new LinkedHashMap<>();
     linkedHashMap.put("firstField", Field.create("sampleValue"));
     linkedHashMap.put("secondField", Field.create(20));
@@ -192,8 +226,14 @@ public class TestDelimitedDataGenerator {
   @Test
   public void testGeneratorListMapIgnoreHeader() throws Exception {
     StringWriter writer = new StringWriter();
-    DataGenerator gen = new DelimitedCharDataGenerator(writer, CsvMode.CSV.getFormat(), CsvHeader.IGNORE_HEADER, "h", "d", false);
-
+    DataGenerator gen = new DelimitedCharDataGenerator(
+        writer,
+        new CsvFormat(),
+        CsvHeader.IGNORE_HEADER,
+        "h",
+        "d",
+        false
+    );
     LinkedHashMap<String, Field> linkedHashMap = new LinkedHashMap<>();
     linkedHashMap.put("firstField", Field.create("sampleValue"));
     linkedHashMap.put("secondField", Field.create(20));
@@ -209,8 +249,14 @@ public class TestDelimitedDataGenerator {
   @Test
   public void testGeneratorListMapNoHeader() throws Exception {
     StringWriter writer = new StringWriter();
-    DataGenerator gen = new DelimitedCharDataGenerator(writer, CsvMode.CSV.getFormat(), CsvHeader.NO_HEADER, "h", "d", false);
-
+    DataGenerator gen = new DelimitedCharDataGenerator(
+        writer,
+        new CsvFormat(),
+        CsvHeader.NO_HEADER,
+        "h",
+        "d",
+        false
+    );
     LinkedHashMap<String, Field> linkedHashMap = new LinkedHashMap<>();
     linkedHashMap.put("firstField", Field.create("sampleValue"));
     linkedHashMap.put("secondField", Field.create(20));
@@ -226,7 +272,14 @@ public class TestDelimitedDataGenerator {
   @Test
   public void testFlush() throws Exception {
     StringWriter writer = new StringWriter();
-    DataGenerator gen = new DelimitedCharDataGenerator(writer, CsvMode.CSV.getFormat(), CsvHeader.NO_HEADER, "h", "d", false);
+    DataGenerator gen = new DelimitedCharDataGenerator(
+        writer,
+        new CsvFormat(),
+        CsvHeader.NO_HEADER,
+        "h",
+        "d",
+        false
+    );
     Record record = RecordCreator.create();
     List<Field> list = new ArrayList<>();
     Map<String,Field> map = new HashMap<>();
@@ -246,7 +299,14 @@ public class TestDelimitedDataGenerator {
   @Test
   public void testClose() throws Exception {
     StringWriter writer = new StringWriter();
-    DataGenerator gen = new DelimitedCharDataGenerator(writer, CsvMode.CSV.getFormat(), CsvHeader.NO_HEADER, "h", "d", false);
+    DataGenerator gen = new DelimitedCharDataGenerator(
+        writer,
+        new CsvFormat(),
+        CsvHeader.NO_HEADER,
+        "h",
+        "d",
+        false
+    );
     Record record = RecordCreator.create();
     List<Field> list = new ArrayList<>();
     Map<String,Field> map = new HashMap<>();
@@ -265,7 +325,14 @@ public class TestDelimitedDataGenerator {
   @Test(expected = IOException.class)
   public void testWriteAfterClose() throws Exception {
     StringWriter writer = new StringWriter();
-    DataGenerator gen = new DelimitedCharDataGenerator(writer, CsvMode.CSV.getFormat(), CsvHeader.NO_HEADER, "h", "d", false);
+    DataGenerator gen = new DelimitedCharDataGenerator(
+        writer,
+        new CsvFormat(),
+        CsvHeader.NO_HEADER,
+        "h",
+        "d",
+        false
+    );
     gen.close();
     Record record = RecordCreator.create();
     gen.write(record);
@@ -274,7 +341,14 @@ public class TestDelimitedDataGenerator {
   @Test(expected = IOException.class)
   public void testFlushAfterClose() throws Exception {
     StringWriter writer = new StringWriter();
-    DataGenerator gen = new DelimitedCharDataGenerator(writer, CsvMode.CSV.getFormat(), CsvHeader.NO_HEADER, "h", "d", false);
+    DataGenerator gen = new DelimitedCharDataGenerator(
+        writer,
+        new CsvFormat(),
+        CsvHeader.NO_HEADER,
+        "h",
+        "d",
+        false
+    );
     gen.close();
     gen.flush();
   }

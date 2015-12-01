@@ -19,13 +19,14 @@
  */
 package com.streamsets.pipeline.lib.generator.delimited;
 
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import com.google.common.collect.ImmutableSet;
 import com.streamsets.pipeline.config.CsvHeader;
 import com.streamsets.pipeline.config.CsvMode;
+import com.streamsets.pipeline.lib.csv.CsvFormat;
 import com.streamsets.pipeline.lib.generator.DataGeneratorFactory;
 import com.streamsets.pipeline.lib.generator.DataGenerator;
 import com.streamsets.pipeline.lib.util.DelimitedDataConstants;
-import org.apache.commons.csv.CSVFormat;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -75,11 +76,17 @@ public class DelimitedDataGeneratorFactory extends DataGeneratorFactory {
 
   @Override
   public DataGenerator getGenerator(OutputStream os) throws IOException {
-    CSVFormat csvFormat = getSettings().getMode(CsvMode.class).getFormat();
-    if (getSettings().getMode(CsvMode.class) == CsvMode.CUSTOM) {
-      csvFormat = CSVFormat.DEFAULT.withDelimiter((char)getSettings().getConfig(DelimitedDataConstants.DELIMITER_CONFIG))
-        .withEscape((char) getSettings().getConfig(DelimitedDataConstants.ESCAPE_CONFIG))
-        .withQuote((char)getSettings().getConfig(DelimitedDataConstants.QUOTE_CONFIG));
+    CsvFormat csvFormat;
+    CsvMode csvMode = getSettings().getMode(CsvMode.class);
+    if (csvMode == CsvMode.CUSTOM) {
+      csvFormat = new CsvFormat();
+      CsvSchema csvSchema = csvFormat.getCsvSchema()
+          .withColumnSeparator((char) getSettings().getConfig(DelimitedDataConstants.DELIMITER_CONFIG))
+          .withEscapeChar((char) getSettings().getConfig(DelimitedDataConstants.ESCAPE_CONFIG))
+          .withQuoteChar((char) getSettings().getConfig(DelimitedDataConstants.QUOTE_CONFIG));
+      csvFormat.setCsvSchema(csvSchema);
+    } else {
+      csvFormat = CsvMode.getCsvFormat(csvMode);
     }
     return new DelimitedCharDataGenerator(createWriter(os), csvFormat, header, headerKey, valueKey, replaceNewLines);
   }

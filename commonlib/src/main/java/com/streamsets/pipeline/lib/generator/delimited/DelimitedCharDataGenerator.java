@@ -19,13 +19,14 @@
  */
 package com.streamsets.pipeline.lib.generator.delimited;
 
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.streamsets.pipeline.api.Field;
 import com.streamsets.pipeline.api.Record;
 import com.streamsets.pipeline.config.CsvHeader;
+import com.streamsets.pipeline.lib.csv.CsvFormat;
 import com.streamsets.pipeline.lib.generator.DataGenerator;
 import com.streamsets.pipeline.lib.generator.DataGeneratorException;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -35,30 +36,36 @@ import java.util.List;
 import java.util.Set;
 
 public class DelimitedCharDataGenerator implements DataGenerator {
-  private final CSVFormat format;
+  private final Writer writer;
+  private final ObjectWriter csvEncoder;
+  private final CsvFormat format;
   private final CsvHeader header;
   private final String headerKey;
   private final String valueKey;
-  private final CSVPrinter printer;
   private boolean firstRecord;
   private boolean closed;
   private boolean replaceNewLines;
 
-  public DelimitedCharDataGenerator(Writer writer, CSVFormat format, CsvHeader header, String headerKey, String valueKey,
-                                    boolean replaceNewLines)
-      throws IOException {
-    format = format.withHeader((String[])null);
+  public DelimitedCharDataGenerator(
+      Writer writer,
+      CsvFormat format,
+      CsvHeader header,
+      String headerKey,
+      String valueKey,
+      boolean replaceNewLines
+  ) throws IOException {
+    this.writer = writer;
+    this.csvEncoder = new CsvMapper().writer().withSchema(format.getCsvSchema());
     this.format = format;
     this.headerKey = headerKey;
     this.valueKey = valueKey;
-    printer = new CSVPrinter(writer, format);
     this.header = header;
-    firstRecord = true;
+    this.firstRecord = true;
     this.replaceNewLines = replaceNewLines;
   }
 
   //VisibleForTesting
-  CSVFormat getFormat() {
+  CsvFormat getFormat() {
     return format;
   }
 
@@ -99,7 +106,7 @@ public class DelimitedCharDataGenerator implements DataGenerator {
     } else if (field.getType() == Field.Type.LIST_MAP) {
       LinkedHashMap<String, Field> columns = field.getValueAsListMap();
       Set<String> values = columns.keySet(); // Set is backed by LinkedHashMap, so order is maintained
-      printer.printRecord(values);
+      writer.write(csvEncoder.writeValueAsString(values));
     } else {
       throw new DataGeneratorException(Errors.DELIMITED_GENERATOR_00, record.getHeader().getSourceId(), field.getType());
     }
@@ -144,7 +151,7 @@ public class DelimitedCharDataGenerator implements DataGenerator {
       }
       values.add(value);
     }
-    printer.printRecord(values);
+    writer.write(csvEncoder.writeValueAsString(values));
   }
 
   @Override
@@ -152,12 +159,12 @@ public class DelimitedCharDataGenerator implements DataGenerator {
     if (closed) {
       throw new IOException("generator has been closed");
     }
-    printer.flush();
+    writer.flush();
   }
 
   @Override
   public void close() throws IOException {
     closed = true;
-    printer.close();
+    writer.close();
   }
 }
