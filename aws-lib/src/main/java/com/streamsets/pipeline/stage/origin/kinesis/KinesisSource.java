@@ -53,7 +53,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.streamsets.pipeline.stage.lib.kinesis.KinesisUtil.ONE_MB;
 
@@ -65,12 +64,9 @@ public class KinesisSource extends BaseSource implements OffsetCommitter {
   private ExecutorService executorService;
   private boolean isStarted = false;
   private Worker worker;
-  private final Object checkpointMonitor = new Object();
-  // Necessary to share checkpoint state between this class and the IRecordProcessor implementation.
-  private final AtomicBoolean checkpointComplete = new AtomicBoolean(false);
   private LinkedTransferQueue<RecordsAndCheckpointer> batchQueue;
+  private LinkedTransferQueue<IRecordProcessorCheckpointer> commitQueue;
   private IRecordProcessorCheckpointer checkpointer;
-
   private DataParserFactory parserFactory;
 
   public KinesisSource(KinesisConsumerConfigBean conf) {
@@ -85,6 +81,7 @@ public class KinesisSource extends BaseSource implements OffsetCommitter {
 
     if (issues.isEmpty()) {
       batchQueue = new LinkedTransferQueue<>();
+      commitQueue = new LinkedTransferQueue<>();
 
       conf.dataFormatConfig.init(
           getContext(),
@@ -99,7 +96,7 @@ public class KinesisSource extends BaseSource implements OffsetCommitter {
       executorService = Executors.newFixedThreadPool(1);
 
       IRecordProcessorFactory recordProcessorFactory =
-          new StreamSetsRecordProcessorFactory(checkpointMonitor, checkpointComplete, batchQueue);
+          new StreamSetsRecordProcessorFactory(batchQueue, commitQueue);
 
       // Create the KCL worker with the StreamSets record processor factory
       worker = createKinesisWorker(recordProcessorFactory);
@@ -178,7 +175,7 @@ public class KinesisSource extends BaseSource implements OffsetCommitter {
       waitTime = conf.previewWaitTime;
     }
 
-    while((startTime + waitTime) > System.currentTimeMillis() && recordCounter < maxBatchSize) {
+    while ((startTime + waitTime) > System.currentTimeMillis() && recordCounter < maxBatchSize) {
       try {
         long timeRemaining = (startTime + waitTime) - System.currentTimeMillis();
         final RecordsAndCheckpointer recordsAndCheckpointer =
@@ -233,11 +230,8 @@ public class KinesisSource extends BaseSource implements OffsetCommitter {
               checkpointer, offsets.get("sequenceNumber"), Long.parseLong(offsets.get("subSequenceNumber"))
           );
         }
-        synchronized (checkpointMonitor) {
-          // Notify RecordProcessor that it can continue processing records or shutting down.
-          checkpointComplete.set(true);
-          checkpointMonitor.notifyAll();
-        }
+        // Unblock worker thread.
+        commitQueue.put(checkpointer);
       } catch (NumberFormatException e) {
         // Couldn't parse the provided subsequence, invalid offset string.
         LOG.error("Couldn't parse the offset string: {}", offset);

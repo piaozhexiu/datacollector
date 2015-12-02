@@ -26,31 +26,28 @@ import com.amazonaws.services.kinesis.clientlibrary.types.ProcessRecordsInput;
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownInput;
 import com.amazonaws.services.kinesis.clientlibrary.types.ShutdownReason;
 import com.amazonaws.services.kinesis.model.Record;
+import com.streamsets.pipeline.api.impl.Utils;
 import com.streamsets.pipeline.stage.lib.kinesis.RecordsAndCheckpointer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.TransferQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class StreamSetsRecordProcessor implements IRecordProcessor {
   private static final Logger LOG = LoggerFactory.getLogger(StreamSetsRecordProcessor.class);
 
-  private final TransferQueue<RecordsAndCheckpointer> recordQueue;
+  private final TransferQueue<RecordsAndCheckpointer> batchQueue;
+  private final TransferQueue<IRecordProcessorCheckpointer> commitQueue;
 
-  private final Object checkpointMonitor;
-  private final AtomicBoolean checkpointComplete;
   private String shardId;
 
   public StreamSetsRecordProcessor(
-      Object checkpointMonitor,
-      AtomicBoolean checkpointComplete,
-      TransferQueue<RecordsAndCheckpointer> recordQueue
+      TransferQueue<RecordsAndCheckpointer> batchQueue,
+      TransferQueue<IRecordProcessorCheckpointer> commitQueue
   ) {
-    this.checkpointMonitor = checkpointMonitor;
-    this.checkpointComplete = checkpointComplete;
-    this.recordQueue = recordQueue;
+    this.batchQueue = batchQueue;
+    this.commitQueue = commitQueue;
   }
 
   /**
@@ -72,16 +69,10 @@ public class StreamSetsRecordProcessor implements IRecordProcessor {
     List<Record> records = processRecordsInput.getRecords();
     IRecordProcessorCheckpointer checkpointer = processRecordsInput.getCheckpointer();
     try {
-      recordQueue.transfer(new RecordsAndCheckpointer(records, checkpointer));
-      checkpointComplete.set(false);
+      batchQueue.transfer(new RecordsAndCheckpointer(records, checkpointer));
       LOG.debug("Placed {} records into the queue.", records.size());
-
-      synchronized (checkpointMonitor) {
-        // Wait for checkpointing of the batch to complete.
-        while (!checkpointComplete.get()) {
-          checkpointMonitor.wait();
-        }
-      }
+      IRecordProcessorCheckpointer committedCheckpointer = commitQueue.take();
+      Utils.checkState(committedCheckpointer == checkpointer, "Records must be committed before proceeding");
     } catch (InterruptedException e) {
       LOG.error("Failed to place batch in queue for shardId {}", shardId);
     }
@@ -95,13 +86,12 @@ public class StreamSetsRecordProcessor implements IRecordProcessor {
     LOG.info("Shutting down record processor for shard: {}", shardId);
     if (shutdownInput.getShutdownReason() == ShutdownReason.TERMINATE) {
       // We send an empty batch with the checkpointer to signal end of a shard.
+      IRecordProcessorCheckpointer checkpointer = shutdownInput.getCheckpointer();
       try {
-        recordQueue.transfer(new RecordsAndCheckpointer(shutdownInput.getCheckpointer()));
-        checkpointComplete.set(false);
-        while (!checkpointComplete.get()) {
-          checkpointMonitor.wait();
-        }
-        LOG.debug("Shutdown checkpoint completed.");
+        batchQueue.transfer(new RecordsAndCheckpointer(checkpointer));
+        LOG.debug("Placed shutdown checkpoint into the queue.");
+        IRecordProcessorCheckpointer committedCheckpointer = commitQueue.take();
+        Utils.checkState(committedCheckpointer == checkpointer, "Records must be committed before proceeding");
       } catch (InterruptedException e) {
         LOG.error("Interrupted while waiting for shutdown checkpoint.");
       }
