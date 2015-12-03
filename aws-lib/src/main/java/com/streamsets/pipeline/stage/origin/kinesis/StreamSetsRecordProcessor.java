@@ -71,8 +71,10 @@ public class StreamSetsRecordProcessor implements IRecordProcessor {
     try {
       batchQueue.transfer(new RecordsAndCheckpointer(records, checkpointer));
       LOG.debug("Placed {} records into the queue.", records.size());
-      IRecordProcessorCheckpointer committedCheckpointer = commitQueue.take();
-      Utils.checkState(committedCheckpointer == checkpointer, "Records must be committed before proceeding");
+      while (!commitQueue.contains(checkpointer)) {
+        commitQueue.wait();
+      }
+      commitQueue.remove(checkpointer);
     } catch (InterruptedException e) {
       LOG.error("Failed to place batch in queue for shardId {}", shardId);
     }

@@ -175,11 +175,11 @@ public class KinesisSource extends BaseSource implements OffsetCommitter {
       waitTime = conf.previewWaitTime;
     }
 
+    checkpointer = null;
     while ((startTime + waitTime) > System.currentTimeMillis() && recordCounter < maxBatchSize) {
       try {
         long timeRemaining = (startTime + waitTime) - System.currentTimeMillis();
-        final RecordsAndCheckpointer recordsAndCheckpointer =
-            batchQueue.poll(timeRemaining, TimeUnit.MILLISECONDS);
+        final RecordsAndCheckpointer recordsAndCheckpointer = batchQueue.poll(timeRemaining, TimeUnit.MILLISECONDS);
         if (null != recordsAndCheckpointer) {
           final List<com.amazonaws.services.kinesis.model.Record> batch = recordsAndCheckpointer.getRecords();
           checkpointer = recordsAndCheckpointer.getCheckpointer();
@@ -187,6 +187,7 @@ public class KinesisSource extends BaseSource implements OffsetCommitter {
           if (batch.isEmpty()) {
             // Signaled that this is the end of a shard.
             lastSourceOffset = ExtendedSequenceNumber.SHARD_END.toString();
+            break;
           }
           for (com.amazonaws.services.kinesis.model.Record record : batch) {
             batchMaker.addRecord(processKinesisRecord(record));
@@ -232,6 +233,7 @@ public class KinesisSource extends BaseSource implements OffsetCommitter {
         }
         // Unblock worker thread.
         commitQueue.put(checkpointer);
+        commitQueue.notifyAll();
       } catch (NumberFormatException e) {
         // Couldn't parse the provided subsequence, invalid offset string.
         LOG.error("Couldn't parse the offset string: {}", offset);
