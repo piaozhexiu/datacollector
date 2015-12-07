@@ -26,18 +26,15 @@ import com.streamsets.pipeline.api.Record;
 import com.streamsets.pipeline.api.StageException;
 import com.streamsets.pipeline.api.base.BaseSource;
 import com.streamsets.pipeline.api.impl.Utils;
-import com.streamsets.pipeline.config.JsonMode;
+import com.streamsets.pipeline.config.DataFormat;
 import com.streamsets.pipeline.lib.executor.SafeScheduledExecutorService;
 import com.streamsets.pipeline.lib.parser.DataParser;
 import com.streamsets.pipeline.lib.parser.DataParserException;
 import com.streamsets.pipeline.lib.parser.DataParserFactory;
-import com.streamsets.pipeline.lib.parser.DataParserFactoryBuilder;
-import com.streamsets.pipeline.lib.parser.DataParserFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,9 +63,9 @@ public class HttpClientSource extends BaseSource implements OffsetCommitter {
   private final long maxBatchWaitTime;
   private final int batchSize;
 
+  private final HttpClientConfigBean config;
   private final HttpClientMode httpMode;
   private final long pollingInterval;
-  private final JsonMode jsonMode;
   private String entityDelimiter;
 
   private ExecutorService executorService;
@@ -83,21 +80,24 @@ public class HttpClientSource extends BaseSource implements OffsetCommitter {
   /**
    * @param config Configuration object for the HTTP client
    */
-  public HttpClientSource(final HttpClientConfig config) {
-    this.httpMode = config.getHttpMode();
-    this.resourceUrl = config.getResourceUrl();
-    this.requestTimeoutMillis = config.getRequestTimeoutMillis();
-    this.entityDelimiter = config.getEntityDelimiter();
-    this.batchSize = config.getBatchSize();
-    this.maxBatchWaitTime = config.getMaxBatchWaitTime();
-    this.consumerKey = config.getConsumerKey();
-    this.consumerSecret = config.getConsumerSecret();
-    this.token = config.getToken();
-    this.tokenSecret = config.getTokenSecret();
-    this.jsonMode = JsonMode.MULTIPLE_OBJECTS;
-    this.pollingInterval = config.getPollingInterval();
-    this.httpMethod = config.getHttpMethod().name();
-    this.requestData = config.getRequestData();
+  public HttpClientSource(final HttpClientConfigBean config) {
+    this.config = config;
+    this.httpMode = config.httpMode;
+    this.resourceUrl = config.resourceUrl;
+    this.requestTimeoutMillis = config.requestTimeoutMillis;
+    if (config.dataFormat == DataFormat.JSON || config.dataFormat == DataFormat.XML) {
+      // TODO: How do I get data delimiter?
+      entityDelimiter = null;
+    }
+    this.batchSize = config.batchSize;
+    this.maxBatchWaitTime = config.maxBatchWaitTime;
+    this.consumerKey = config.consumerKey;
+    this.consumerSecret = config.consumerSecret;
+    this.token = config.token;
+    this.tokenSecret = config.tokenSecret;
+    this.pollingInterval = config.pollingInterval;
+    this.httpMethod = config.httpMethod.name();
+    this.requestData = config.requestData;
   }
 
   @Override
@@ -109,8 +109,14 @@ public class HttpClientSource extends BaseSource implements OffsetCommitter {
     // that the pipeline is restarted we'll resume with any entities still enqueued.
     entityQueue = new ArrayBlockingQueue<>(2 * batchSize);
 
-    parserFactory = new DataParserFactoryBuilder(getContext(), DataParserFormat.JSON)
-        .setMode(jsonMode).setMaxDataLen(-1).build();
+    config.dataFormatConfig.init(
+        getContext(),
+        config.dataFormat,
+        Groups.HTTP.name(),
+        errors
+    );
+
+    parserFactory = config.dataFormatConfig.getParserFactory();
 
     if (token != null) {
       httpConsumer = new HttpStreamConsumer(

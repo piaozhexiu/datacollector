@@ -115,15 +115,15 @@ public class TestHttpClientSource extends JerseyTest {
 
   @Test
   public void testStreamingHttp() throws Exception {
-    HttpClientConfig config = new HttpClientConfig();
-    config.setHttpMode(HttpClientMode.STREAMING);
-    config.setResourceUrl("http://localhost:9998/stream");
-    config.setRequestTimeoutMillis(1000);
-    config.setEntityDelimiter("\r\n");
-    config.setBatchSize(100);
-    config.setMaxBatchWaitTime(1000);
-    config.setPollingInterval(1000);
-    config.setHttpMethod(HttpMethod.GET);
+    HttpClientConfigBean config = new HttpClientConfigBean();
+    config.httpMode = HttpClientMode.STREAMING;
+    config.resourceUrl = "http://localhost:9998/stream";
+    config.requestTimeoutMillis = 1000;
+//    config.entityDelimiter = "\r\n";
+    config.batchSize = 100;
+    config.maxBatchWaitTime = 1000;
+    config.pollingInterval = 1000;
+    config.httpMethod = HttpMethod.GET;
     HttpClientSource origin = new HttpClientSource(config);
 
     SourceRunner runner = new SourceRunner.Builder(HttpClientSource.class, origin)
@@ -151,16 +151,16 @@ public class TestHttpClientSource extends JerseyTest {
 
   @Test
   public void testStreamingPost() throws Exception {
-    HttpClientConfig config = new HttpClientConfig();
-    config.setHttpMode(HttpClientMode.STREAMING);
-    config.setResourceUrl("http://localhost:9998/stream");
-    config.setRequestTimeoutMillis(1000);
-    config.setEntityDelimiter("\r\n");
-    config.setBatchSize(100);
-    config.setMaxBatchWaitTime(1000);
-    config.setPollingInterval(1000);
-    config.setHttpMethod(HttpMethod.POST);
-    config.setRequestData("adam");
+    HttpClientConfigBean config = new HttpClientConfigBean();
+    config.httpMode = HttpClientMode.STREAMING;
+    config.resourceUrl = "http://localhost:9998/stream";
+    config.requestTimeoutMillis = 1000;
+//    config.entityDelimiter = "\r\n";
+    config.batchSize = 100;
+    config.maxBatchWaitTime = 1000;
+    config.pollingInterval = 1000;
+    config.httpMethod = HttpMethod.POST;
+    config.requestData = "adam";
     HttpClientSource origin = new HttpClientSource(config);
 
     SourceRunner runner = new SourceRunner.Builder(HttpClientSource.class, origin)
@@ -188,15 +188,15 @@ public class TestHttpClientSource extends JerseyTest {
 
   @Test
   public void testStreamingHttpWithNewlineOnly() throws Exception {
-    HttpClientConfig config = new HttpClientConfig();
-    config.setHttpMode(HttpClientMode.STREAMING);
-    config.setResourceUrl("http://localhost:9998/nlstream");
-    config.setRequestTimeoutMillis(1000);
-    config.setEntityDelimiter("\n");
-    config.setBatchSize(100);
-    config.setMaxBatchWaitTime(1000);
-    config.setPollingInterval(1000);
-    config.setHttpMethod(HttpMethod.GET);
+    HttpClientConfigBean config = new HttpClientConfigBean();
+    config.httpMode = HttpClientMode.STREAMING;
+    config.resourceUrl = "http://localhost:9998/nlstream";
+    config.requestTimeoutMillis = 1000;
+//    config.enntityDelimiter = "\n";
+    config.batchSize = 100;
+    config.maxBatchWaitTime = 1000;
+    config.pollingInterval = 1000;
+    config.httpMethod = HttpMethod.GET;
     HttpClientSource origin = new HttpClientSource(config);
 
     SourceRunner runner = new SourceRunner.Builder(HttpClientSource.class, origin)
@@ -291,15 +291,15 @@ public class TestHttpClientSource extends JerseyTest {
   }
 
   private HttpClientSource getTwitterHttpClientSource() {
-    HttpClientConfig config = new HttpClientConfig();
-    config.setHttpMode(HttpClientMode.STREAMING);
-    config.setResourceUrl("https://stream.twitter.com/1.1/statuses/sample.json");
-    config.setRequestTimeoutMillis(1000);
-    config.setEntityDelimiter("\r\n");
-    config.setBatchSize(100);
-    config.setMaxBatchWaitTime(1000);
-    config.setPollingInterval(1000);
-    config.setHttpMethod(HttpMethod.GET);
+    HttpClientConfigBean config = new HttpClientConfigBean();
+    config.httpMode = HttpClientMode.STREAMING;
+    config.resourceUrl = "https://stream.twitter.com/1.1/statuses/sample.json";
+    config.requestTimeoutMillis = 1000;
+//    config.entityDelimiter = "\r\n";
+    config.batchSize = 100;
+    config.maxBatchWaitTime = 1000;
+    config.pollingInterval = 1000;
+    config.httpMethod = HttpMethod.GET;
 
     return new HttpClientSource(config);
   }

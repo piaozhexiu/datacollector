@@ -19,7 +19,6 @@
  */
 package com.streamsets.pipeline.stage.origin.http;
 
-import org.apache.commons.io.IOUtils;
 import org.glassfish.jersey.client.ChunkedInput;
 import org.glassfish.jersey.client.oauth1.AccessToken;
 import org.glassfish.jersey.client.oauth1.ConsumerCredentials;
