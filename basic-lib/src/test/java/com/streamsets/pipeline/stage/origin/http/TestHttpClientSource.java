@@ -24,8 +24,10 @@ import com.google.common.collect.Sets;
 import com.streamsets.pipeline.api.OnRecordError;
 import com.streamsets.pipeline.api.Record;
 import com.streamsets.pipeline.api.StageException;
+import com.streamsets.pipeline.config.DataFormat;
 import com.streamsets.pipeline.sdk.SourceRunner;
 import com.streamsets.pipeline.sdk.StageRunner;
+import com.streamsets.pipeline.stage.origin.lib.DataParserFormatConfig;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.glassfish.jersey.test.DeploymentContext;
@@ -94,6 +96,48 @@ public class TestHttpClientSource extends JerseyTest {
     );
   }
 
+  @Path("/xmlstream")
+  @Produces("application/xml")
+  public static class XMLStreamResource {
+    @GET
+    public Response getStream() {
+      return Response.ok(
+//          "<root xmlns>
+//      <x a="1"/>
+//      <record/>
+//      <record>r1</record>
+//      <foo:record>r2</foo:record>
+//      <a>
+//      <record>r3</record>
+//      </a>
+//      <record a="A"/>
+//      <record xmlns:x="y">r4</record>
+//      <record>
+//      <name>a</name>
+//      </record>
+//      <record>
+//      <name>b</name>
+//      <data>
+//      <value>0</value>
+//      <value>1</value>
+//      </data>
+//      </record>
+//      <record>foo<![CDATA[bar]]></record>
+//      </root>
+      ).build();
+    }
+  }
+
+  @Override
+  protected Application configure() {
+    return new ResourceConfig(
+        Sets.newHashSet(
+            StreamResource.class,
+            NewlineStreamResource.class
+        )
+    );
+  }
+
   @Override
   protected TestContainerFactory getTestContainerFactory() throws TestContainerException {
     return new GrizzlyWebTestContainerFactory();
@@ -116,10 +160,13 @@ public class TestHttpClientSource extends JerseyTest {
   @Test
   public void testStreamingHttp() throws Exception {
     HttpClientConfigBean config = new HttpClientConfigBean();
+    DataParserFormatConfig dataFormatConfig = new DataParserFormatConfig();
+    config.dataFormatConfig = dataFormatConfig;
+    config.dataFormat = DataFormat.JSON;
     config.httpMode = HttpClientMode.STREAMING;
     config.resourceUrl = "http://localhost:9998/stream";
     config.requestTimeoutMillis = 1000;
-//    config.entityDelimiter = "\r\n";
+    config.jsonEntityDelimiter = "\r\n";
     config.batchSize = 100;
     config.maxBatchWaitTime = 1000;
     config.pollingInterval = 1000;
@@ -152,10 +199,13 @@ public class TestHttpClientSource extends JerseyTest {
   @Test
   public void testStreamingPost() throws Exception {
     HttpClientConfigBean config = new HttpClientConfigBean();
+    DataParserFormatConfig dataFormatConfig = new DataParserFormatConfig();
+    config.dataFormatConfig = dataFormatConfig;
+    config.dataFormat = DataFormat.JSON;
     config.httpMode = HttpClientMode.STREAMING;
     config.resourceUrl = "http://localhost:9998/stream";
     config.requestTimeoutMillis = 1000;
-//    config.entityDelimiter = "\r\n";
+    config.jsonEntityDelimiter = "\r\n";
     config.batchSize = 100;
     config.maxBatchWaitTime = 1000;
     config.pollingInterval = 1000;
@@ -189,10 +239,13 @@ public class TestHttpClientSource extends JerseyTest {
   @Test
   public void testStreamingHttpWithNewlineOnly() throws Exception {
     HttpClientConfigBean config = new HttpClientConfigBean();
+    DataParserFormatConfig dataFormatConfig = new DataParserFormatConfig();
+    config.dataFormatConfig = dataFormatConfig;
+    config.dataFormat = DataFormat.JSON;
     config.httpMode = HttpClientMode.STREAMING;
     config.resourceUrl = "http://localhost:9998/nlstream";
     config.requestTimeoutMillis = 1000;
-//    config.enntityDelimiter = "\n";
+    config.jsonEntityDelimiter = "\n";
     config.batchSize = 100;
     config.maxBatchWaitTime = 1000;
     config.pollingInterval = 1000;
@@ -292,10 +345,13 @@ public class TestHttpClientSource extends JerseyTest {
 
   private HttpClientSource getTwitterHttpClientSource() {
     HttpClientConfigBean config = new HttpClientConfigBean();
+    DataParserFormatConfig dataFormatConfig = new DataParserFormatConfig();
+    config.dataFormatConfig = dataFormatConfig;
+    config.dataFormat = DataFormat.JSON;
     config.httpMode = HttpClientMode.STREAMING;
     config.resourceUrl = "https://stream.twitter.com/1.1/statuses/sample.json";
     config.requestTimeoutMillis = 1000;
-//    config.entityDelimiter = "\r\n";
+    config.jsonEntityDelimiter = "\r\n";
     config.batchSize = 100;
     config.maxBatchWaitTime = 1000;
     config.pollingInterval = 1000;

@@ -73,7 +73,7 @@ public class HttpClientConfigBean {
       displayPosition = 25,
       lines = 2,
       dependsOn = "httpMethod",
-      triggeredByValue = { "POST", "PUT", "DELETE" },
+      triggeredByValue = {"POST", "PUT", "DELETE"},
       group = "#0"
   )
   public String requestData;
@@ -153,7 +153,7 @@ public class HttpClientConfigBean {
       displayPosition = 10,
       group = "#1",
       dependsOn = "isOAuthEnabled",
-      triggeredByValue = { "true" }
+      triggeredByValue = {"true"}
   )
   public String consumerKey;
 
@@ -165,7 +165,7 @@ public class HttpClientConfigBean {
       displayPosition = 20,
       group = "#1",
       dependsOn = "isOAuthEnabled",
-      triggeredByValue = { "true" }
+      triggeredByValue = {"true"}
   )
   public String consumerSecret;
 
@@ -177,7 +177,7 @@ public class HttpClientConfigBean {
       displayPosition = 30,
       group = "#1",
       dependsOn = "isOAuthEnabled",
-      triggeredByValue = { "true" }
+      triggeredByValue = {"true"}
   )
   public String token;
 
@@ -192,4 +192,30 @@ public class HttpClientConfigBean {
       triggeredByValue = "true"
   )
   public String tokenSecret;
+
+  @ConfigDef(
+      required = true,
+      type = ConfigDef.Type.STRING,
+      label = "Entity Delimiter",
+      defaultValue = "\\r\\n",
+      description = "Records may be delimited by a user-defined string. Common values are \\r\\n and \\n",
+      displayPosition = 20,
+      group = "JSON",
+      dependsOn = "jsonMode",
+      triggeredByValue = "MULTIPLE_OBJECTS"
+  )
+  public String jsonEntityDelimiter;
+
+  @ConfigDef(
+      required = true,
+      type = ConfigDef.Type.STRING,
+      label = "Entity Delimiter",
+      defaultValue = "\\r\\n",
+      description = "Records may be delimited by a user-defined string. Common values are \\r\\n and \\n",
+      displayPosition = 20,
+      group = "XML",
+      dependsOn = "xmlMode",
+      triggeredByValue = "MULTIPLE_OBJECTS"
+  )
+  public String xmlEntityDelimiter;
 }

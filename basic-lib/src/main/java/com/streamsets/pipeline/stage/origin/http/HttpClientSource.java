@@ -85,8 +85,12 @@ public class HttpClientSource extends BaseSource implements OffsetCommitter {
     this.httpMode = config.httpMode;
     this.resourceUrl = config.resourceUrl;
     this.requestTimeoutMillis = config.requestTimeoutMillis;
-    if (config.dataFormat == DataFormat.JSON || config.dataFormat == DataFormat.XML) {
-      // TODO: How do I get data delimiter?
+    if (config.dataFormat == DataFormat.JSON) {
+      entityDelimiter = config.jsonEntityDelimiter;
+    } else if (config.dataFormat == DataFormat.XML) {
+      entityDelimiter = config.xmlEntityDelimiter;
+    } else {
+      // Entity delimiter is not applicable for TEXT
       entityDelimiter = null;
     }
     this.batchSize = config.batchSize;

@@ -29,7 +29,7 @@ import com.streamsets.pipeline.api.StageDef;
 import com.streamsets.pipeline.configurablestage.DSource;
 
 @StageDef(
-  version = 1,
+  version = 2,
   label = "HTTP Client",
   description = "Uses an HTTP client to read records from an URL.",
   icon="httpclient.png",
