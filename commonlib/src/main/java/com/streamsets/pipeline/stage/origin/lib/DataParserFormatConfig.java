@@ -546,6 +546,21 @@ public class DataParserFormatConfig {
   )
   public boolean isDelimited = true;
 
+  @ConfigDef(
+      required = true,
+      type = ConfigDef.Type.NUMBER,
+      defaultValue = "1024",
+      label = "Max Data Size (bytes)",
+      description = "Larger objects are not processed",
+      displayPosition = 700,
+      group = "BINARY",
+      dependsOn = "dataFormat^",
+      triggeredByValue = "BINARY",
+      min = 1,
+      max = Integer.MAX_VALUE
+  )
+  public int binaryMaxObjectLen;
+
   public boolean init(
       Stage.Context context,
       DataFormat dataFormat,
